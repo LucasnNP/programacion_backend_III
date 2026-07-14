@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import program from "./commander.js";
 
-// Se Carga el archivo .env correspondiente y eporta la configuación
+// Se Carga el archivo .env correspondiente y exporta la configuación
 const { mode } = program.opts();
 
 dotenv.config({
