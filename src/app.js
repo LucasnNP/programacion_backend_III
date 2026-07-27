@@ -10,6 +10,7 @@ import sessionsRouter from "./routes/sessions.router.js";
 import mocksRouter from "./routes/mocks.router.js";
 import loggerRouter from "./routes/logger.router.js";
 import config from "./config/config.js";
+import logger from "./config/logger.js";
 
 const app = express();
 const PORT = config.port;
@@ -28,5 +29,5 @@ app.use("/api/mocks", mocksRouter);
 app.use("/api/logger", loggerRouter);
 
 app.listen(PORT, () =>
-  console.log(`Listening on ${PORT} in ${config.mode} mode`),
+  logger.info(`Listening on ${PORT} in ${config.mode} mode`),
 );
