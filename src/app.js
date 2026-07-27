@@ -9,8 +9,11 @@ import sessionsRouter from "./routes/sessions.router.js";
 import mocksRouter from "./routes/mocks.router.js";
 import config from "./config/config.js";
 
+import errorHandler from "./middlewares/errorHandler.js";
+
 const app = express();
 const PORT = config.port;
+mongoose.set("strictQuery", false);
 mongoose.connect(config.mongoUrl);
 
 app.use(express.json());
@@ -21,6 +24,8 @@ app.use("/api/pets", petsRouter);
 app.use("/api/adoptions", adoptionsRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/mocks", mocksRouter);
+
+app.use(errorHandler);
 
 app.listen(PORT, () =>
   console.log(`Listening on ${PORT} in ${config.mode} mode`),
