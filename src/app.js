@@ -12,8 +12,11 @@ import loggerRouter from "./routes/logger.router.js";
 import config from "./config/config.js";
 import logger from "./config/logger.js";
 
+import errorHandler from "./middlewares/errorHandler.js";
+
 const app = express();
 const PORT = config.port;
+mongoose.set("strictQuery", false);
 mongoose.connect(config.mongoUrl);
 
 app.use(express.json());
@@ -27,6 +30,8 @@ app.use("/api/adoptions", adoptionsRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/mocks", mocksRouter);
 app.use("/api/logger", loggerRouter);
+
+app.use(errorHandler);
 
 app.listen(PORT, () =>
   logger.info(`Listening on ${PORT} in ${config.mode} mode`),
