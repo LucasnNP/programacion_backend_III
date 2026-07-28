@@ -50,7 +50,12 @@ const productionLogger = winston.createLogger({
     new winston.transports.File({
       filename: "./errors.log",
       level: "error",
-      format: winston.format.simple(),
+      format: winston.format.combine(
+        winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+        winston.format.printf(({ timestamp, level, message }) => {
+          return `${timestamp} ${level}: ${message}`;
+        }),
+      ),
     }),
   ],
 });

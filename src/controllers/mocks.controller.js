@@ -37,13 +37,11 @@ export const generateData = async (req, res) => {
     usersCount < 0 ||
     petsCount < 0
   ) {
-    return res
-      .status(400)
-      .send({
-        status: "error",
-        error:
-          "Los parámetros users y pets deben ser números mayores o iguales a 0.",
-      });
+    return res.status(400).send({
+      status: "error",
+      error:
+        "Los parámetros users y pets deben ser números mayores o iguales a 0.",
+    });
   }
 
   for (let i = 0; i < usersCount; i++) {
@@ -55,6 +53,8 @@ export const generateData = async (req, res) => {
     const pet = generateMockPet();
     await petsService.create(pet);
   }
+
+  req.logger.info(`Se generaron ${users} usuarios y ${pets} mascotas`);
 
   res.send({
     status: "success",
