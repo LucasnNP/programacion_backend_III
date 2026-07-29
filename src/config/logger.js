@@ -1,7 +1,7 @@
 import winston from "winston";
 import config from "./config.js";
 
-const customLevels = {
+const customLevelsOptions = {
   levels: {
     fatal: 0,
     error: 1,
@@ -20,48 +20,55 @@ const customLevels = {
   },
 };
 
-winston.addColors(customLevels.colors);
+winston.addColors(customLevelsOptions.colors);
 
-// Logger para desarrollo
-const developmentLogger = winston.createLogger({
-  levels: customLevels.levels,
-  transports: [
-    new winston.transports.Console({
-      level: "debug",
-      format: winston.format.combine(
-        winston.format.colorize({ all: true }),
-        winston.format.simple(),
-      ),
-    }),
-  ],
+// Formato reutilizable
+const lineFormat = winston.format.printf(({ timestamp, level, message }) => {
+  return `${timestamp} ${level}: ${message}`;
 });
 
-// Logger para produccion
-const productionLogger = winston.createLogger({
-  levels: customLevels.levels,
-  transports: [
-    new winston.transports.Console({
-      level: "info",
-      format: winston.format.combine(
-        winston.format.colorize({ all: true }),
-        winston.format.simple(),
-      ),
-    }),
-    new winston.transports.File({
-      filename: "./errors.log",
-      level: "error",
-      format: winston.format.combine(
-        winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
-        winston.format.printf(({ timestamp, level, message }) => {
-          return `${timestamp} ${level}: ${message}`;
+// Formato para la consola
+const consoleFormat = winston.format.combine(
+  winston.format.colorize({
+    colors: customLevelsOptions.colors,
+  }),
+  winston.format.timestamp({
+    format: "DD/MM/YYYY HH:mm:ss",
+  }),
+  lineFormat,
+);
+
+// Formato para archivo
+const fileFormat = winston.format.combine(
+  winston.format.timestamp({
+    format: "DD/MM/YYYY HH:mm:ss",
+  }),
+  lineFormat,
+);
+
+const transports =
+  config.mode === "production"
+    ? [
+        new winston.transports.Console({
+          level: "info",
+          format: consoleFormat,
         }),
-      ),
-    }),
-  ],
-});
+        new winston.transports.File({
+          filename: "./errors.log",
+          level: "error",
+          format: fileFormat,
+        }),
+      ]
+    : [
+        new winston.transports.Console({
+          level: "debug",
+          format: consoleFormat,
+        }),
+      ];
 
-// Exportar el logger correspondiente según el entorno
-const logger =
-  config.mode === "production" ? productionLogger : developmentLogger;
+const logger = winston.createLogger({
+  levels: customLevelsOptions.levels,
+  transports,
+});
 
 export default logger;

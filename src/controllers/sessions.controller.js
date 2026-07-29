@@ -18,10 +18,14 @@ const register = async (req, res, next) => {
       });
     }
     const exists = await usersService.getUserByEmail(email);
-    if (exists)
+    if (exists) {
+      req.logger.warning(
+        `Intento de registro con un email existente: ${email}`,
+      );
       return res
         .status(400)
         .send({ status: "error", error: "User already exists" });
+    }
     const hashedPassword = await createHash(password);
     const user = {
       first_name,
@@ -29,79 +33,112 @@ const register = async (req, res, next) => {
       email,
       password: hashedPassword,
     };
-    let result = await usersService.create(user);
+    const result = await usersService.create(user);
     req.logger.info(`Usuario registrado: ${result.email}`);
     res.send({ status: "success", payload: result._id });
   } catch (error) {
     req.logger.error(error);
-
-    res
-      .status(500)
-      .send({ status: "error", error: "Error interno del servidor" });
+    next(error);
   }
 };
 
-const login = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    return res
-      .status(400)
-      .send({ status: "error", error: "Incomplete values" });
-  const user = await usersService.getUserByEmail(email);
-  if (!user)
-    return res
-      .status(404)
-      .send({ status: "error", error: "User doesn't exist" });
-  const isValidPassword = await passwordValidation(user, password);
-  if (!isValidPassword)
-    return res
-      .status(400)
-      .send({ status: "error", error: "Incorrect password" });
-  const userDto = UserDTO.getUserTokenFrom(user);
-  const token = jwt.sign(userDto, "tokenSecretJWT", { expiresIn: "1h" });
-  req.logger.info(`Inicio de sesión: ${user.email}`);
-  res
-    .cookie("coderCookie", token, { maxAge: 3600000 })
-    .send({ status: "success", message: "Logged in" });
+const login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password)
+      return res
+        .status(400)
+        .send({ status: "error", error: "Incomplete values" });
+    const user = await usersService.getUserByEmail(email);
+    if (!user) {
+      req.logger.warning(
+        `Intento de inicio de sesión con usuario inexistente: ${email}`,
+      );
+      return res
+        .status(401)
+        .send({ status: "error", error: "Invalid credentials" });
+    }
+    const isValidPassword = await passwordValidation(user, password);
+    if (!isValidPassword) {
+      req.logger.warning(`Contraseña incorrecta para el usuario: ${email}`);
+      return res
+        .status(401)
+        .send({ status: "error", error: "Invalid credentials" });
+    }
+    const userDto = UserDTO.getUserTokenFrom(user);
+    const token = jwt.sign(userDto, "tokenSecretJWT", { expiresIn: "1h" });
+    req.logger.info(`Inicio de sesión: ${user.email}`);
+    res
+      .cookie("coderCookie", token, { maxAge: 3600000 })
+      .send({ status: "success", message: "Logged in" });
+  } catch (error) {
+    req.logger.error(error);
+    next(error);
+  }
 };
 
-async function current(req, res) {
-  const cookie = req.cookies["coderCookie"];
-  const user = jwt.verify(cookie, "tokenSecretJWT");
-  if (user) return res.send({ status: "success", payload: user });
-}
+const current = async (req, res, next) => {
+  try {
+    const cookie = req.cookies["coderCookie"];
+    const user = jwt.verify(cookie, "tokenSecretJWT");
+    if (user) return res.send({ status: "success", payload: user });
+  } catch (error) {
+    req.logger.error(error);
+    next(error);
+  }
+};
 
-const unprotectedLogin = async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password)
-    return res
-      .status(400)
-      .send({ status: "error", error: "Incomplete values" });
-  const user = await usersService.getUserByEmail(email);
-  if (!user)
-    return res
-      .status(404)
-      .send({ status: "error", error: "User doesn't exist" });
-  const isValidPassword = await passwordValidation(user, password);
-  if (!isValidPassword)
-    return res
-      .status(400)
-      .send({ status: "error", error: "Incorrect password" });
-  const token = jwt.sign(user, "tokenSecretJWT", { expiresIn: "1h" });
-  res
-    .cookie("unprotectedCookie", token, { maxAge: 3600000 })
-    .send({ status: "success", message: "Unprotected Logged in" });
+const unprotectedLogin = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password)
+      return res
+        .status(400)
+        .send({ status: "error", error: "Incomplete values" });
+    const user = await usersService.getUserByEmail(email);
+    if (!user) {
+      req.logger.warning(
+        `Intento de inicio de sesión inseguro con usuario inexistente: ${email}`,
+      );
+      return res
+        .status(401)
+        .send({ status: "error", error: "invalid credentials" });
+    }
+
+    const isValidPassword = await passwordValidation(user, password);
+    if (!isValidPassword) {
+      req.logger.warning(`Contraseña incorrecta para el usuario: ${email}`);
+      return res
+        .status(401)
+        .send({ status: "error", error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(user, "tokenSecretJWT", { expiresIn: "1h" });
+    req.logger.info(`Inicio de sesión sin protección: ${user.email}`);
+    res
+      .cookie("unprotectedCookie", token, { maxAge: 3600000 })
+      .send({ status: "success", message: "Unprotected Logged in" });
+  } catch (error) {
+    req.logger.error(error);
+    next(error);
+  }
 };
-const unprotectedCurrent = async (req, res) => {
-  const cookie = req.cookies["unprotectedCookie"];
-  const user = jwt.verify(cookie, "tokenSecretJWT");
-  if (user) return res.send({ status: "success", payload: user });
+
+const unprotectedCurrent = async (req, res, next) => {
+  try {
+    const cookie = req.cookies["unprotectedCookie"];
+    const user = jwt.verify(cookie, "tokenSecretJWT");
+    if (user) return res.send({ status: "success", payload: user });
+  } catch (error) {
+    req.logger.error(error);
+    next(error);
+  }
 };
+
 export default {
   current,
   login,
   register,
-  current,
   unprotectedLogin,
   unprotectedCurrent,
 };

@@ -2,12 +2,12 @@ import { Router } from "express";
 import {
   generateData,
   getMockingUsers,
-  getMokingPets,
+  getMockingPets,
 } from "../controllers/mocks.controller.js";
 
 const mocksRouter = Router();
 
-mocksRouter.get("/mockingpets", getMokingPets);
+mocksRouter.get("/mockingpets", getMockingPets);
 mocksRouter.get("/mockingusers", getMockingUsers);
 mocksRouter.post("/generateData", generateData);
 
