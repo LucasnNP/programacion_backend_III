@@ -1,0 +1,176 @@
+paths:
+  /api/adoptions:
+    get:
+      summary: Obtener todas las adopciones
+      description: Devuelve el listado completo de adopciones registradas.
+      tags:
+        - Adoptions
+      responses:
+        "200":
+          description: lista de adopciones obtenida correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAllAdoptionsResponse"
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+  /api/adoptions/{aid}:
+    get:
+      summary: Obtener una adopción por ID
+      description: Devuelve la información de una adopción a partir de su identificador.
+      tags:
+        - Adoptions
+      parameters:
+        - in: path
+          name: aid
+          required: true
+          schema:
+            type: integer
+          description: ID de la adopción
+      responses:
+        "200":
+          description: Adopción obtenida correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAdoptionResponse"
+        "404":
+          description: La adopción no existe.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Adoption not found
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+  /api/adoptions/{uid}/{pid}:
+    post:
+      summary: Adoptar una mascota
+      description: Registra una adopción asociando un usuario con una mascota disponible.
+      tags:
+        - Adoptions
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: integer
+          description: ID del usuario que desea adoptar
+        - in: path
+          name: pid
+          required: true
+          schema:
+            type: integer
+          description: ID de la mascota a adoptar
+      responses:
+        "201":
+          description: Adopción registrada correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: La mascota ya fue adoptada.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Pet is already adopted
+        "404":
+          description: El usuario o la mascota no existen.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                UserNotFoud:
+                  value:
+                    status: error
+                    error: User not found
+                PetNotFoud:
+                  value:
+                    status: error
+                    error: User not found
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+components:
+  schemas:
+    Adoption:
+      type: object
+      description: Modelo de una adopción registrada en la base de datos.
+      properties:
+        _id:
+          type: string
+          description: Identificador único de la adopción.
+          example: 686fba68d90f563ee24780e1
+        owner:
+          type: string
+          description: Identificador del usuario que realizó la adopción.
+          example: 686fba68d90f563ee24780e2
+        pet:
+          type: string
+          description: Identificador de la mascota adoptada.
+          example: 686fba68d90f563ee24780e3
+    GetAllAdoptionsResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        payload:
+          type: array
+          items:
+            $ref: "#/components/schemas/Adoption"
+    GetAdoptionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        payload:
+          $ref: "#/components/schemas/Adoption"
+    MessageResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+          description: Mensaje indicando el resultado de la operación.
+          example: Adoption created successfully
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          description: Estado de la respuesta.
+          example: error
+        error:
+          type: string
+          description: Mensaje descriptivo del error.

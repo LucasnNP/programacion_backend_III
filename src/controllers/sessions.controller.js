@@ -35,9 +35,9 @@ const register = async (req, res, next) => {
     };
     const result = await usersService.create(user);
     req.logger.info(`Usuario registrado: ${result.email}`);
-    res.send({ status: "success", payload: result._id });
+    res.status(201).send({ status: "success", payload: result._id });
   } catch (error) {
-    req.logger.error(error);
+    req.logger.error(error.stack || error.message);
     next(error);
   }
 };
@@ -72,7 +72,7 @@ const login = async (req, res, next) => {
       .cookie("coderCookie", token, { maxAge: 3600000 })
       .send({ status: "success", message: "Logged in" });
   } catch (error) {
-    req.logger.error(error);
+    req.logger.error(error.stack || error.message);
     next(error);
   }
 };
@@ -80,10 +80,23 @@ const login = async (req, res, next) => {
 const current = async (req, res, next) => {
   try {
     const cookie = req.cookies["coderCookie"];
+    if (!cookie) {
+      req.logger.warning(
+        "Intento de acceso a /current sin token de autenticación",
+      );
+      return res.status(401).send({ status: "error", error: "Unauthorized" });
+    }
     const user = jwt.verify(cookie, "tokenSecretJWT");
     if (user) return res.send({ status: "success", payload: user });
   } catch (error) {
-    req.logger.error(error);
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      req.logger.warning("Token inválido o expirado");
+      return res.status(401).send({ status: "error", error: "Unauthorized" });
+    }
+    req.logger.error(error.stack || error.message);
     next(error);
   }
 };
@@ -112,14 +125,18 @@ const unprotectedLogin = async (req, res, next) => {
         .status(401)
         .send({ status: "error", error: "Invalid credentials" });
     }
-
-    const token = jwt.sign(user, "tokenSecretJWT", { expiresIn: "1h" });
+    console.log(user);
+    console.log(typeof user);
+    console.log(user.constructor.name);
+    const token = jwt.sign(user.toObject(), "tokenSecretJWT", {
+      expiresIn: "1h",
+    });
     req.logger.info(`Inicio de sesión sin protección: ${user.email}`);
     res
       .cookie("unprotectedCookie", token, { maxAge: 3600000 })
       .send({ status: "success", message: "Unprotected Logged in" });
   } catch (error) {
-    req.logger.error(error);
+    req.logger.error(error.stack || error.message);
     next(error);
   }
 };
@@ -127,10 +144,21 @@ const unprotectedLogin = async (req, res, next) => {
 const unprotectedCurrent = async (req, res, next) => {
   try {
     const cookie = req.cookies["unprotectedCookie"];
+    if (!cookie) {
+      req.logger.warning("Intento de acceso a /unprotectedCurrent sin token");
+      return res.status(401).send({ status: "error", error: "Unauthorized" });
+    }
     const user = jwt.verify(cookie, "tokenSecretJWT");
     if (user) return res.send({ status: "success", payload: user });
   } catch (error) {
-    req.logger.error(error);
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      req.logger.warning("Token JWT inválido o expirado");
+      return res.status(401).send({ status: "error", error: "Unauthorized" });
+    }
+    req.logger.error(error.stack || error.message);
     next(error);
   }
 };

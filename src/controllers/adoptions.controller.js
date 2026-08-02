@@ -56,7 +56,7 @@ const createAdoption = async (req, res, next) => {
     await petsService.update(pet._id, { adopted: true, owner: user._id });
     await adoptionsService.create({ owner: user._id, pet: pet._id });
     req.logger.info(`Mascota ${pet.name} adoptada por ${user.email}`);
-    res.send({ status: "success", message: "Pet adopted" });
+    res.status(201).send({ status: "success", message: "Pet adopted" });
   } catch (error) {
     req.logger.error(error);
     next(error);

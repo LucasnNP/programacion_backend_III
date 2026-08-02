@@ -12,6 +12,9 @@ import loggerRouter from "./routes/logger.router.js";
 import config from "./config/config.js";
 import logger from "./config/logger.js";
 
+import swaggerUiExpress from "swagger-ui-express";
+import specs from "./docs/swagger.js";
+
 import errorHandler from "./middlewares/errorHandler.js";
 
 const app = express();
@@ -30,6 +33,8 @@ app.use("/api/adoptions", adoptionsRouter);
 app.use("/api/sessions", sessionsRouter);
 app.use("/api/mocks", mocksRouter);
 app.use("/api/logger", loggerRouter);
+
+app.use("/apidocs", swaggerUiExpress.serve, swaggerUiExpress.setup(specs));
 
 app.use(errorHandler);
 
