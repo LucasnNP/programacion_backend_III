@@ -29,7 +29,7 @@ const createPet = async (req, res, next) => {
     const pet = PetDTO.getPetInputFrom({ name, specie, birthDate });
     const result = await petsService.create(pet);
     req.logger.info(`Mascota creada: ${result.name}`);
-    res.send({ status: "success", payload: result });
+    res.status(201).send({ status: "success", payload: result });
   } catch (error) {
     req.logger.error(error);
     next(error);
@@ -96,7 +96,7 @@ const createPetWithImage = async (req, res, next) => {
     req.logger.debug(pet);
     const result = await petsService.create(pet);
     req.logger.info(`Mascota creada con imagen: ${result.name}`);
-    res.send({ status: "success", payload: result });
+    res.status(201).send({ status: "success", payload: result });
   } catch (error) {
     req.logger.error(error);
     next(error);
