@@ -2,7 +2,6 @@ import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import jwt from "jsonwebtoken";
 import UserDTO from "../dto/User.dto.js";
-import userService from "../services/index.js";
 import CustomError from "../utils/errors/CustomError.js";
 import EErrors from "../utils/errors/EErrors.js";
 import { generateUserErrorInfo } from "../utils/errors/Info.js";
