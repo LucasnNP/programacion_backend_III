@@ -170,6 +170,33 @@ const unprotectedCurrent = async (req, res, next) => {
   }
 };
 
+const logout = async (req, res, next) => {
+  try {
+    const cookie = req.cookies["coderCookie"];
+    if (!cookie) {
+      req.logger.warning("Intento de logout sin token de autenticación");
+      return res.status(401).send({ status: "error", error: "Unauthorized" });
+    }
+
+    const user = jwt.verify(cookie, "tokenSecretJWT");
+    await usersService.update(user._id, { last_connection: new Date() });
+    res.clearCookie("coderCookie").send({
+      status: "success",
+      message: "Logged out",
+    });
+  } catch (error) {
+    if (
+      error.name === "JsonWebTokenError" ||
+      error.name === "TokenExpiredError"
+    ) {
+      req.logger.warning("Token JWT inválido o expirado");
+      return res.status(401).send({ status: "error", error: "Unauthorized" });
+    }
+    req.logger.error(error.stack || error.message);
+    next(error);
+  }
+};
+
 export default {
   current,
   login,

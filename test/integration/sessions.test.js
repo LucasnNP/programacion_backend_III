@@ -99,10 +99,11 @@ describe("Testing Sessions Router", function () {
 
       expect(result.statusCode).to.equal(200);
       expect(result.body.status).to.equal("success");
-      //jwt me devuelve el objeto {name, role, email, iat, exp} y no solamente el DTO, separo iat y exp del resto del objeto
+      //jwt me devuelve el objeto {_id, name, role, email, iat, exp} y no solamente el DTO, separo iat y exp del resto del objeto
       const { iat, exp, ...strictPayload } = result.body.payload;
       // Ahora hago un deep.equal estricto del resto del payload, Si alguien en el futuro agrega un campo no deseado (ej. password), esto FALLARÁ ya que vendrá incluido dentro del strictPayload.
       expect(strictPayload).to.deep.equal({
+        _id: result.body.payload._id,
         name: `${registerUser.first_name} ${registerUser.last_name}`,
         email: registerUser.email,
         role: "user",
