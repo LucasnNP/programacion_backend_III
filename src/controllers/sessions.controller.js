@@ -2,6 +2,7 @@ import { usersService } from "../services/index.js";
 import { createHash, passwordValidation } from "../utils/index.js";
 import jwt from "jsonwebtoken";
 import UserDTO from "../dto/User.dto.js";
+import userService from "../services/index.js";
 import CustomError from "../utils/errors/CustomError.js";
 import EErrors from "../utils/errors/EErrors.js";
 import { generateUserErrorInfo } from "../utils/errors/Info.js";
@@ -65,6 +66,9 @@ const login = async (req, res, next) => {
         .status(401)
         .send({ status: "error", error: "Invalid credentials" });
     }
+    // Actualizar última conexión antes de generar el token, si por algún motivo falla la creación JWT el usuario alcanzó a autenticarse correctamente igual
+    await userService.update(user._id, { last_connection: new Date() });
+
     const userDto = UserDTO.getUserTokenFrom(user);
     const token = jwt.sign(userDto, "tokenSecretJWT", { expiresIn: "1h" });
     req.logger.info(`Inicio de sesión: ${user.email}`);
@@ -125,6 +129,9 @@ const unprotectedLogin = async (req, res, next) => {
         .status(401)
         .send({ status: "error", error: "Invalid credentials" });
     }
+    // Actualizar última conexión antes de generar el token, si por algún motivo falla la creación JWT el usuario alcanzó a autenticarse correctamente igual
+    await userService.update(user._id, { last_connection: new Date() });
+
     console.log(user);
     console.log(typeof user);
     console.log(user.constructor.name);

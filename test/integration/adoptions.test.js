@@ -1,15 +1,6 @@
 import chai from "chai";
 import supertest from "supertest";
 
-import userModel from "../../src/dao/models/User.js";
-import petModel from "../../src/dao/models/Pet.js";
-import adoptionModel from "../../src/dao/models/Adoption.js";
-
-import mongoose from "mongoose";
-
-console.log("mongoose.connection.readyState =", mongoose.connection.readyState);
-console.log(adoptionModel.db === mongoose.connection);
-
 const expect = chai.expect;
 const requester = supertest("http://localhost:8080");
 
@@ -25,6 +16,31 @@ describe("Testing Adoptions Router", function () {
     name: "Firulais",
     specie: "Perro",
     birthDate: "2023-01-15",
+  };
+
+  // función auxiliar de creación de usuario
+  const createUser = async () => {
+    const userData = {
+      ...adoptionUser,
+      email: `adoption${Date.now()}@mail.com`,
+    };
+
+    const response = await requester
+      .post("/api/sessions/register")
+      .send(userData);
+
+    expect(response.statusCode).to.equal(201);
+
+    return response.body.payload;
+  };
+
+  // Función auxiliar de creación de mascota
+  const createPet = async () => {
+    const response = await requester.post("/api/pets").send(adoptionPet);
+
+    expect(response.statusCode).to.equal(201);
+
+    return response.body.payload._id;
   };
 
   let userId;
@@ -43,48 +59,26 @@ describe("Testing Adoptions Router", function () {
 
   describe("GET /adoptions/:aid", function () {
     before(async function () {
-      const userData = {
-        ...adoptionUser,
-        email: `adoption${Date.now()}@mail.com`,
-      };
-      console.log("1 - Registrando usuario");
-      // Registrar usuario
-      const registerResponse = await requester
-        .post("/api/sessions/register")
-        .send(userData);
-      expect(registerResponse.statusCode).to.equal(201);
-
-      // Obtener usuario desde MongoDB
-      console.log("2 - Buscando usuario");
-      console.log("2.1 - Antes del findOne");
-      userId = registerResponse.body.payload;
-      console.log("2.2 - Después del findOne");
+      // Registrar y obtener usuario
+      userId = await createUser();
 
       // Crear mascota
-      console.log("3 - Creando mascota");
-      const petResponse = await requester.post("/api/pets").send(adoptionPet);
-      petId = petResponse.body.payload._id;
+      petId = await createPet();
 
       //crear adopción
-      console.log("4 - Creando adopción");
       const adoptionResponse = await requester.post(
         `/api/adoptions/${userId}/${petId}`,
       );
-      console.log(adoptionResponse.statusCode);
-      console.log(adoptionResponse.body);
       expect(adoptionResponse.statusCode).to.equal(201);
 
       //Obtener el id de la adopción creada
-      console.log("5 - Buscando adopción");
-      console.log("5.1 - Antes del findOne adoption");
-      console.log("Estado conexión:", adoptionModel.db.readyState);
-      console.log(adoptionModel.collection.name);
-      console.log(adoptionModel.db.name);
-      const adoption = await adoptionModel.find();
-      console.log("5.2 - Después del findOne adoption");
-      console.log(adoption);
-      adoptionId = adoption._id.toString();
-      console.log("6 - Before finalizado");
+      const allAdoptions = await requester.get("/api/adoptions");
+      expect(allAdoptions.statusCode).to.equal(200);
+      const adoption = allAdoptions.body.payload.find(
+        (a) => a.owner === userId && a.pet === petId,
+      );
+      expect(adoption).to.exist;
+      adoptionId = adoption._id;
     });
 
     it("Debe obtener una adopción por su id", async function () {
@@ -109,5 +103,71 @@ describe("Testing Adoptions Router", function () {
     });
   });
 
-  //describe("POST /adoptions/:uid/:pid", function () {});
+  describe("POST /adoptions/:uid/:pid", function () {
+    it("Debe crear una adopción correctamente", async function () {
+      // Registrar usuario
+      const userId = await createUser();
+
+      // Crear una mascota
+      const petId = await createPet();
+
+      // Crear adopción
+      const result = await requester.post(`/api/adoptions/${userId}/${petId}`);
+
+      expect(result.statusCode).to.equal(201);
+      expect(result.body.status).to.equal("success");
+      expect(result.body.message).to.equal("Pet adopted");
+    });
+
+    it("Debe devolver 404 si el usuario no existe", async function () {
+      // Crear mascota
+      const petId = await createPet();
+
+      // Usuario inexistente
+      const fakeUserId = "507f191e810c19729de860ea";
+
+      const result = await requester.post(
+        `/api/adoptions/${fakeUserId}/${petId}`,
+      );
+
+      expect(result.statusCode).to.equal(404);
+      expect(result.body.status).to.equal("error");
+      expect(result.body.error).to.equal("User not found");
+    });
+
+    it("Debe devolver 404 si la mascota no existe", async function () {
+      const userId = await createUser();
+
+      const fakePetId = "507f191e810c19729de860ea";
+
+      const result = await requester.post(
+        `/api/adoptions/${userId}/${fakePetId}`,
+      );
+
+      expect(result.statusCode).to.equal(404);
+      expect(result.body.status).to.equal("error");
+      expect(result.body.error).to.equal("Pet not found");
+    });
+
+    it("Debe devolver 400 si la mascota ya fue adoptada", async function () {
+      // Registrar usuario
+      const userId = await createUser();
+
+      // Crear una mascota
+      const petId = await createPet();
+
+      // Primera adopción de mascota creada
+      const firstAdoption = await requester.post(
+        `/api/adoptions/${userId}/${petId}`,
+      );
+      expect(firstAdoption.statusCode).to.equal(201);
+
+      // Se reutiliza el mismo usuario porque el controller sólo valida que la mascota ya esté adoptada.
+      const result = await requester.post(`/api/adoptions/${userId}/${petId}`);
+
+      expect(result.statusCode).to.equal(400);
+      expect(result.body.status).to.equal("error");
+      expect(result.body.error).to.equal("Pet is already adopted");
+    });
+  });
 });
