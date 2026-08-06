@@ -60,6 +60,39 @@ describe("Testing Sessions Router", function () {
       expect(cookie).to.include("coderCookie");
     });
 
+    it("Debe actualizar last_connection al iniciar sesión", async function () {
+      // Registrar usuario
+      const userData = { ...registerUser, email: `test${Date.now()}@mail.com` };
+
+      const registerResponse = await requester
+        .post("/api/sessions/register")
+        .send(userData);
+
+      expect(registerResponse.statusCode).to.equal(201);
+
+      const userId = registerResponse.body.payload;
+
+      // Verificar estado inicial
+      const createdUser = await userModel.findById(userId);
+
+      expect(createdUser).to.exist;
+      expect(createdUser.last_connection).to.equal(null);
+
+      // Login
+      const loginResponse = await requester.post("/api/sessions/login").send({
+        email: userData.email,
+        password: userData.password,
+      });
+
+      expect(loginResponse.statusCode).to.equal(200);
+
+      // Verificar actualización
+      const updatedUser = await userModel.findById(userId);
+
+      expect(updatedUser.last_connection).to.not.equal(null);
+      expect(updatedUser.last_connection).to.be.instanceOf(Date);
+    });
+
     it("Debe devolver 401 si el usuario no existe", async function () {
       const result = await requester
         .post("/api/sessions/login")

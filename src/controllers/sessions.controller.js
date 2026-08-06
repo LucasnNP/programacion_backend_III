@@ -202,4 +202,5 @@ export default {
   register,
   unprotectedLogin,
   unprotectedCurrent,
+  logout,
 };

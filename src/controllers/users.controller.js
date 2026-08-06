@@ -66,10 +66,7 @@ const uploadDocuments = async (req, res, next) => {
       req.logger.error(
         `Intento de subir documentos para usuario inexistente: ${uid}`,
       );
-      return (
-        res,
-        status(404).send({ status: "error", error: "User not found" })
-      );
+      return res.status(404).send({ status: "error", error: "User not found" });
     }
 
     if (!req.files || req.files.length === 0) {
