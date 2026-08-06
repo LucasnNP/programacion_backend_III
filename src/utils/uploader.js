@@ -1,15 +1,27 @@
 import __dirname from "./index.js";
-import multer from 'multer';
+import multer from "multer";
+
+const folders = {
+  image: "img/pets",
+  documents: "documents",
+};
 
 const storage = multer.diskStorage({
-    destination:function(req,file,cb){
-        cb(null,`${__dirname}/../public/img`)
-    },
-    filename:function(req,file,cb){
-        cb(null,`${Date.now()}-${file.originalname}`)
-    }
-})
+  destination(req, file, cb) {
+    const folder = folders[file.fieldname];
 
-const uploader = multer({storage})
+    if (!folder) {
+      return cb(new Error("Tipo de archivo no permitido"));
+    }
+
+    cb(null, `${__dirname}/../public/${folder}`);
+  },
+
+  filename(req, file, cb) {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+
+const uploader = multer({ storage });
 
 export default uploader;

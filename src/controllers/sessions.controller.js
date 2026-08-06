@@ -66,7 +66,7 @@ const login = async (req, res, next) => {
         .send({ status: "error", error: "Invalid credentials" });
     }
     // Actualizar última conexión antes de generar el token, si por algún motivo falla la creación JWT el usuario alcanzó a autenticarse correctamente igual
-    await userService.update(user._id, { last_connection: new Date() });
+    await usersService.update(user._id, { last_connection: new Date() });
 
     const userDto = UserDTO.getUserTokenFrom(user);
     const token = jwt.sign(userDto, "tokenSecretJWT", { expiresIn: "1h" });
@@ -129,7 +129,7 @@ const unprotectedLogin = async (req, res, next) => {
         .send({ status: "error", error: "Invalid credentials" });
     }
     // Actualizar última conexión antes de generar el token, si por algún motivo falla la creación JWT el usuario alcanzó a autenticarse correctamente igual
-    await userService.update(user._id, { last_connection: new Date() });
+    await usersService.update(user._id, { last_connection: new Date() });
 
     console.log(user);
     console.log(typeof user);
