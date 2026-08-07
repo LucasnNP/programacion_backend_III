@@ -62,35 +62,34 @@ describe("Testing Sessions Router", function () {
 
     it("Debe actualizar last_connection al iniciar sesión", async function () {
       // Registrar usuario
-      const userData = { ...registerUser, email: `test${Date.now()}@mail.com` };
-
+      const testUser = {
+        ...registerUser,
+        email: `lastconnection${Date.now()}@mail.com`,
+      };
       const registerResponse = await requester
         .post("/api/sessions/register")
-        .send(userData);
-
+        .send(testUser);
       expect(registerResponse.statusCode).to.equal(201);
-
       const userId = registerResponse.body.payload;
 
-      // Verificar estado inicial
-      const createdUser = await userModel.findById(userId);
+      // Verificar estado inicial mediante Users
+      const beforeLogin = await requester.get(`/api/users/${userId}`);
+      expect(beforeLogin.statusCode).to.equal(200);
+      expect(beforeLogin.body.status).to.equal("success");
+      expect(beforeLogin.body.payload.last_connection).to.equal(null);
 
-      expect(createdUser).to.exist;
-      expect(createdUser.last_connection).to.equal(null);
-
-      // Login
-      const loginResponse = await requester.post("/api/sessions/login").send({
-        email: userData.email,
-        password: userData.password,
-      });
-
+      // Inicio de sesión
+      const loginResponse = await requester
+        .post("/api/sessions/login")
+        .send({ email: testUser.email, password: testUser.password });
       expect(loginResponse.statusCode).to.equal(200);
+      expect(loginResponse.body.status).to.equal("success");
 
-      // Verificar actualización
-      const updatedUser = await userModel.findById(userId);
-
-      expect(updatedUser.last_connection).to.not.equal(null);
-      expect(updatedUser.last_connection).to.be.instanceOf(Date);
+      //verificar que last_connection fue actualizado
+      const afterLogin = await requester.get(`/api/users/${userId}`);
+      expect(afterLogin.statusCode).to.equal(200);
+      expect(afterLogin.body.status).to.equal("success");
+      expect(afterLogin.body.payload.last_connection).to.not.equal(null);
     });
 
     it("Debe devolver 401 si el usuario no existe", async function () {
@@ -154,6 +153,75 @@ describe("Testing Sessions Router", function () {
     it("debe devolver 401 si el JWT es inválido", async function () {
       const result = await requester
         .get("/api/sessions/current")
+        .set("Cookie", "coderCookie=token_invalido");
+
+      expect(result.statusCode).to.equal(401);
+      expect(result.body.status).to.equal("error");
+      expect(result.body.error).to.equal("Unauthorized");
+    });
+  });
+
+  describe("POST /logout", function () {
+    it("Debe cerrar sesión correctamente y actualizar last_connection", async function () {
+      // Crear usuario exculsivo para este test
+      const testUser = {
+        ...registerUser,
+        email: `logout${Date.now()}@mail.com`,
+      };
+
+      //Registrar usuario
+      const registerResponse = await requester
+        .post("/api/sessions/register")
+        .send(testUser);
+      expect(registerResponse.statusCode).to.equal(201);
+      const userId = registerResponse.body.payload;
+
+      // Iniciar sesión
+      const loginResponse = await requester
+        .post("/api/sessions/login")
+        .send({ email: testUser.email, password: testUser.password });
+      expect(loginResponse.statusCode).to.equal(200);
+      expect(loginResponse.headers).to.have.property("set-cookie");
+      const cookie = loginResponse.headers["set-cookie"][0];
+
+      // Obtener last-connection despues del login
+      const beforeLogout = await requester.get(`/api/users/${userId}`);
+      expect(beforeLogout.statusCode).to.equal(200);
+      expect(beforeLogout.body.payload.last_connection).to.not.equal(null);
+      const loginConnection = beforeLogout.body.payload.last_connection;
+
+      // Realizar logout
+      const logoutResponse = await requester
+        .post("/api/sessions/logout")
+        .set("Cookie", cookie);
+      expect(logoutResponse.statusCode).to.equal(200);
+      expect(logoutResponse.body.status).to.equal("success");
+      expect(logoutResponse.body.message).to.equal("Logged out");
+
+      // Verificar que la cookie haya sido eliminada
+      expect(logoutResponse.headers).to.have.property("set-cookie");
+
+      // Verificar que last_connection haya sido actualizado tras el logout
+      const afterLogout = await requester.get(`/api/users/${userId}`);
+      expect(afterLogout.statusCode).to.equal(200);
+      expect(afterLogout.body.payload.last_connection).to.not.equal(null);
+
+      const logoutConnection = afterLogout.body.payload.last_connection;
+
+      expect(logoutConnection).to.not.equal(loginConnection);
+    });
+
+    it("Debe devolver 401 si se intenta cerrar sesión sin estar autenticado", async function () {
+      const result = await requester.post("/api/sessions/logout");
+
+      expect(result.statusCode).to.equal(401);
+      expect(result.body.status).to.equal("error");
+      expect(result.body.error).to.equal("Unauthorized");
+    });
+
+    it("Debe devolver 401 si se intenta cerrar sesión con y el JWT es inválido", async function () {
+      const result = await requester
+        .post("/api/sessions/logout")
         .set("Cookie", "coderCookie=token_invalido");
 
       expect(result.statusCode).to.equal(401);

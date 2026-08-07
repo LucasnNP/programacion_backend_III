@@ -4,8 +4,15 @@ import program from "./commander.js";
 // Se Carga el archivo .env correspondiente y exporta la configuación
 const { mode } = program.opts();
 
+const envFile =
+  mode === "production"
+    ? "./.env.production"
+    : mode === "test"
+      ? "./.env.test"
+      : "./.env.development";
+
 dotenv.config({
-  path: mode === "production" ? "./.env.production" : "./.env.development",
+  path: envFile,
 });
 
 export default {
