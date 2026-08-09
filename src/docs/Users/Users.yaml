@@ -1,0 +1,321 @@
+paths:
+  /api/users:
+    get:
+      summary: Obtener todos los usuarios
+      description: Devuelve el listado completo de usuarios registrados.
+      tags:
+        - Users
+      responses:
+        "200":
+          description: Listado de usuarios obtenida correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetAllUsersResponse"
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+  /api/users/{uid}:
+    get:
+      summary: Obtener un usuario por su id
+      description: Devuelve la informacón de un usuario a partir de su identificador.
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+          description: Identificador del usuario
+      responses:
+        "200":
+          description: Usuario obtenido correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetUserResponse"
+        "404":
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: User not found
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+    put:
+      summary: Actualizar un usuario
+      description: Actualiza la información de un usuario existente.
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+          description: Identificador del usuario.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/requestBodies/UpdateUser"
+      responses:
+        "200":
+          description: Usuario actualizado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMessageResponse"
+              example:
+                status: success
+                message: User updated
+        "404":
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: User not found
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+    delete:
+      summary: Eliminar un usuario
+      description: Elimina un usuario existente a partir de su identificador.
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+          description: Identificador del usuario.
+      responses:
+        "200":
+          description: Usuario eliminado correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMessageResponse"
+              example:
+                status: success
+                message: User deleted
+        "404":
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: User not found
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+  /api/users/{uid}/documents:
+    post:
+      summary: Subir documentos de un usuario
+      description: Permite subir uno o múltiples documentos y asociarlos al usuario.
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: uid
+          required: true
+          schema:
+            type: string
+          description: Identificador del usuario.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/requestBodies/UploadDocuments"
+      responses:
+        "200":
+          description: Documentos subidos correctamente.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMessageResponse"
+              example:
+                status: success
+                message: Documents uploaded successfully
+        "400":
+          description: No se enviaron documentos.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: No documents uploaded
+        "404":
+          description: Usuario no encontrado.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: User not found
+        "500":
+          description: Error interno del servidor.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                status: error
+                error: Internal server error
+components:
+  requestBodies:
+    UpdateUser:
+      type: object
+      properties:
+        first_name:
+          type: string
+          description: Nombre del usuario.
+        last_name:
+          type: string
+          description: Apellidos del usuario.
+        email:
+          type: string
+          format: email
+          description: Correo electrónico del usuario.
+        role:
+          type: string
+          description: Rol del usuario.
+      example:
+        first_name: Lucas
+        last_name: Prueba
+        email: lucas@example.com
+        role: user
+    UploadDocuments:
+      type: object
+      required:
+        - documents
+      properties:
+        documents:
+          type: array
+          description: Uno o múltiples documentos del usuario.
+          items:
+            type: string
+            format: binary
+  schemas:
+    Document:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Nombre original del documento.
+          example: mi_documento.pdf
+        reference:
+          type: string
+          description: Ruta donde se almacenó el documento.
+          example: public/documents/1723456789-mi_documento.pdf
+    User:
+      type: object
+      description: Información del usuario.
+      properties:
+        _id:
+          type: string
+          description: Identificador único del usuario.
+          example: 686fba68d90f563ee24780e1
+        first_name:
+          type: string
+          example: Lucas
+        last_name:
+          type: string
+          example: Prueba
+        email:
+          type: string
+          format: email
+          example: lucas@example.com
+        role:
+          type: string
+          example: user
+        pets:
+          type: array
+          description: Mascotas asociadas al usuario.
+          items:
+            type: string
+        documents:
+          type: array
+          description: Documentos asociados al usuario.
+          items:
+            $ref: "#/components/schemas/Document"
+        last_connection:
+          type: string
+          format: date-time
+          nullable: true
+          description: Fecha y hora de la última conexión del usuario.
+          example: 2026-08-04T15:30:00.000Z
+    GetAllUsersResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        payload:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+    GetUserResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        payload:
+          $ref: "#/components/schemas/User"
+    UserMessageResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        error:
+          type: string
+          example: User not found

@@ -13,7 +13,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/GetAllPetsResponse"
         "500":
-          decription: Error interno del servidor.
+          description: Error interno del servidor.
           content:
             application/json:
               schema:
@@ -218,7 +218,8 @@ components:
         birthDate: 2022-05-14
     CreatePetWithImage:
       type: object
-      required: -name
+      required:
+        - name
         - specie
         - birthDate
         - image
