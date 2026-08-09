@@ -257,7 +257,7 @@ components:
           type: string
           example: success
         payload:
-          $ref: "#/components/schemas/User"
+          $ref: "#/components/schemas/SessionUser"
     UserDTO:
       type: object
       description: Información del usuario autenticado contenida en el JWT.
@@ -274,7 +274,7 @@ components:
           type: string
           description: Correo electrónico del usuario.
           example: juan.perez@mail.com
-    User:
+    SessionUser:
       type: object
       description: Modelo completo del usuario almacenado en la base de datos.
       properties:
