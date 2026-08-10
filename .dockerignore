@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+
+.git
+.gitignore
+
+.env
+.env.*
+
+test
+coverage
+
+src/public/documents/*
+src/public/img/pets/*
+
+!src/public/documents/.gitkeep
+!src/public/img/pets/.gitkeep
