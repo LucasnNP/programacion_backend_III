@@ -26,7 +26,7 @@ Clonar el repositorio:
 
 ```bash
 git clone <https://github.com/LucasnNP/programacion_backend_III.git>
-cd RecursosBackend-Adoptme
+cd programacion_backend_III
 ```
 
 Instalar las dependencias:
